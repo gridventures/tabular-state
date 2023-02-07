@@ -7,6 +7,9 @@
     "lint": "eslint --config ./.eslintrc.js --ignore-path ./.eslintignore --cache",
     "git-hooks:commit-msg": "commitlint --edit",
     "git-hooks:pre-commit": "lint-staged",
+    "version": "lerna version --no-private",
+    "publish": "lerna publish --no-private",
+    "prepack": "lerna run build",
     "prepare": "husky install"
   },
   "keywords": [],
