@@ -6,7 +6,7 @@
   "scripts": {
     "lint": "eslint --config ./.eslintrc.js --ignore-path ./.eslintignore --cache",
     "git-hooks:commit-msg": "commitlint --edit",
-    "git-hooks:pre-commit": "lint-staged && lerna run build",
+    "git-hooks:pre-commit": "lint-staged",
     "prepare": "husky install"
   },
   "keywords": [],
