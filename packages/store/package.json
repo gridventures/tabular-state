@@ -28,7 +28,7 @@
     "preview": "vite preview"
   },
   "devDependencies": {
-    "@tabular-state/database": "workspace:^0.0.0"
+    "@tabular-state/database": "^0.0.0"
   },
   "dependencies": {
     "@legendapp/state": "^0.23.3",
