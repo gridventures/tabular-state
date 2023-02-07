@@ -1,0 +1,22 @@
+{
+  "[typescript]": {
+    "editor.formatOnPaste": false,
+    "editor.formatOnSave": false,
+    "editor.defaultFormatter": "dbaeumer.vscode-eslint"
+  },
+  "typescript.updateImportsOnFileMove.enabled": "prompt",
+  "editor.formatOnPaste": false,
+  "editor.formatOnSave": true,
+  "editor.codeActionsOnSave": {
+    // https://github.com/microsoft/vscode-eslint/blob/master/README.md#release-notes
+    "source.fixAll.eslint": true,
+    "source.fixAll.stylelint": true
+  },
+  "eslint.workingDirectories": [
+    "packages/store",
+    "packages/persist",
+    "packages/feathers",
+  ],
+  "eslint.packageManager": "pnpm",
+  "typescript.tsdk": "node_modules/typescript/lib",
+}

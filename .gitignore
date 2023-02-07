@@ -1,0 +1,41 @@
+node_modules
+build
+.vscode
+.DS_STORE
+tmp
+
+.DS_Store
+node_modules
+/dist
+
+# local env files
+.env.local
+.env.*.local
+
+# Log files
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Editor directories and files
+.idea
+.vscode
+*.suo^
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+*.eslintcache
+
+*.env
+
+lerna-debug.log
+
+# Coverage directory used by tools like istanbul
+coverage
+.nyc_output
+
+uploads/*
+!uploads/.init
+.commit

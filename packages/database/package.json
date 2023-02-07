@@ -1,0 +1,35 @@
+{
+  "name": "@tabular-state/database",
+  "version": "0.0.0",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/gridventures/tabular-state",
+    "directory": "packages/database"
+  },
+  "author": "Gridventures GmbH <office@gridventures.de>",
+  "license": "MIT",
+  "type": "module",
+  "files": [
+    "lib"
+  ],
+  "main": "./lib/index.umd.cjs",
+  "module": "./lib/index.js",
+  "types": "./lib/types/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./lib/index.js",
+      "require": "./lib/index.umd.cjs"
+    }
+  },
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc && vite build",
+    "preview": "vite preview"
+  },
+  "devDependencies": {
+    "idb-keyval": "^6.2.0"
+  },
+  "peerDependencies": {
+    "idb-keyval": "^6.2.0"
+  }
+}
