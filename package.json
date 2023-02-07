@@ -6,7 +6,7 @@
     "lint": "eslint --config ./.eslintrc.js --ignore-path ./.eslintignore --cache",
     "git-hooks:commit-msg": "commitlint --edit",
     "git-hooks:pre-commit": "lint-staged",
-    "prepack": "lerna run build",
+    "preversion": "lerna run build",
     "prepare": "husky install"
   },
   "keywords": [],
