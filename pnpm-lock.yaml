@@ -46,13 +46,10 @@ importers:
     devDependencies:
       idb-keyval: 6.2.0
 
-  packages/feathers:
-    specifiers: {}
-
   packages/store:
     specifiers:
       '@legendapp/state': ^0.23.3
-      '@tabular-state/database': workspace:^0.0.0
+      '@tabular-state/database': ^0.3.0-alpha.0
       sift: ^16.0.1
     dependencies:
       '@legendapp/state': 0.23.3

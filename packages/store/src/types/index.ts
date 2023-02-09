@@ -61,7 +61,11 @@ export type Store<Tables extends Record<string, DefaultTable>> = {
   queryRows<TableName extends keyof Tables & string>(
     tableName: TableName,
     params: QueryParams<Tables[TableName]['item']>,
-  ): readonly [ObservableComputed<Tables[TableName]['item'][]>, QueryFn, QueryMeta];
+  ): readonly [
+    ObservableComputed<Tables[TableName]['item'][]>,
+    QueryFn<Tables[TableName]['item']>,
+    QueryMeta,
+  ];
   setDatabase(options: SetDatabaseOptions<Tables>): void;
 };
 

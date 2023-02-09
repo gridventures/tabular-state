@@ -35,9 +35,10 @@ export type QueryParams<ItemType> = {
   select?: (keyof ItemType)[];
 };
 
-export type QueryFn = {
+export type QueryFn<TItem> = {
   next: () => void;
   prev: () => void;
+  setParams: (nextParams: Omit<QueryParams<TItem>, 'select'>) => void;
 };
 
 export type QueryMeta = {
@@ -47,7 +48,7 @@ export type QueryMeta = {
   canShowMore: ObservableComputed<boolean>;
 };
 
-export type ObservableQueryResult<T> = ObservableComputed<T> & QueryFn;
+export type ObservableQueryResult<T> = ObservableComputed<T> & QueryFn<T>;
 
 export function observableQuery<
   TItem extends Record<string, any>,
@@ -59,24 +60,29 @@ export function observableQuery<
     onNext?: (nextPage: number) => void;
     onPrev?: (prevPage: number) => void;
   },
-): [ObservableComputed<TItem[]>, QueryFn, QueryMeta] {
-  const query = observable(params.query || {}) as ObservableObject<Query<TItem>>;
+): [ObservableComputed<TItem[]>, QueryFn<TItem>, QueryMeta] {
+  const query = observable(params.query || {}) as ObservableObject<
+    Query<TItem> | CombineQuery<TItem>
+  >;
   const sort = observable(params.sort || {});
   const select = observable(params.select || []);
   const page = observable(1);
   const total = observable(0);
   const totalRows = observable(0);
 
+  const limitHelper = observable(params.limit || 20);
+  const skipHelper = observable(params.skip || 0);
+
   const skip = computed(() => {
     if (params.style === 'paginated') {
-      return (params.skip || 0) + (page.get() - 1) * (params.limit || 20);
+      return skipHelper.get() + (page.get() - 1) * (params.limit || 20);
     }
-    return params.skip || 0;
+    return skipHelper.get();
   });
 
   const limit = computed(() => {
     const pageObs = page.get();
-    return (params.limit || 20) * pageObs;
+    return limitHelper.get() * pageObs;
   });
 
   const maxPage = computed(() => {
@@ -107,7 +113,7 @@ export function observableQuery<
     const limitObs = limit.get();
     const skipObs = skip.get();
 
-    totalRows.set(list.length - (params.skip || 0));
+    totalRows.set(list.length - skipHelper.peek());
 
     const sliceStart = skipObs;
     const sliceEnd = skipObs + limitObs;
@@ -142,6 +148,12 @@ export function observableQuery<
         if (page.peek() === 1) return;
         page.set((p) => p - 1);
         options?.onPrev?.(page.get() + 1);
+      },
+      setParams: (nextParams: Omit<QueryParams<TItem>, 'select'>) => {
+        if (nextParams.limit) limitHelper.set(nextParams.limit);
+        if (nextParams.skip) skipHelper.set(nextParams.skip);
+        if (nextParams.query) query.set(nextParams.query);
+        if (nextParams.sort) sort.set(nextParams.sort);
       },
     },
     {
