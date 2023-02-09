@@ -17,6 +17,7 @@ export function createStore<
 
   let database: Database | undefined;
   let persistentTables: string[] = [];
+  let dynamicPersistentTables: ((tableName: TableNames) => string | false) | undefined;
   const tables = observable<Record<string, Record<DefaultTable['idField'], DefaultTable['item']>>>(
     {},
   );
@@ -164,7 +165,10 @@ export function createStore<
     dispose = tables.onChange((_v, _g, changes) => {
       changes.forEach((change) => {
         const [tableName, rowId] = change.path;
-        if (persistentTables.includes(tableName as string) && rowId && database) {
+        const persist =
+          persistentTables.includes(tableName as string) ||
+          dynamicPersistentTables?.(tableName as string);
+        if (persist && rowId && database) {
           database.setItem(
             tableName as string,
             rowId,
@@ -185,6 +189,7 @@ export function createStore<
 
     const idFields = Object.fromEntries(databaseOptions.persistentTables);
     persistentTables = databaseOptions.persistentTables?.map(([n]) => n) || undefined;
+    dynamicPersistentTables = databaseOptions.dynamicPersistentTables;
 
     if (isUpdated || !database) {
       cleanupListener();

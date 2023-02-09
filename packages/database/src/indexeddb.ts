@@ -21,11 +21,11 @@ export class IndexedDbAdapter implements Database {
   }
 
   private buildKey(tableName: string, itemId: DatabaseId) {
-    return `${tableName}/${itemId}`;
+    return `${tableName}/-/${itemId}`;
   }
 
   private getTableAndIdByKey(key: IDBValidKey) {
-    const [tableName, itemId] = key.toString().split('/');
+    const [tableName, itemId] = key.toString().split('/-/');
     return [tableName, itemId];
   }
 

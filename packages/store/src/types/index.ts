@@ -12,6 +12,7 @@ export type DefaultTable = {
 export type SetDatabaseOptions<Tables extends Record<string, DefaultTable>> = {
   database: Database | undefined;
   persistentTables: [tableName: keyof Tables & string, idField: string][];
+  dynamicPersistentTables?: (tableName: keyof Tables & string) => string | false; // returns idField
   onReady?: () => void;
 };
 
