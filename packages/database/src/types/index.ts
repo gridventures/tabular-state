@@ -14,6 +14,7 @@ export interface Database {
   getItem: (tableName: string, itemId: DatabaseId) => Promise<DatabaseItem>;
   getItems: (tableName: string, itemIds?: DatabaseId[]) => Promise<DatabaseItem[]>;
   getAllItems: () => Promise<Record<string, DatabaseItem[]>>;
+  clear: () => Promise<void>;
 }
 
 export interface DatabaseEvents {

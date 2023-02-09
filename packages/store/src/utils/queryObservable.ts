@@ -41,7 +41,7 @@ export type QueryFn<TItem> = {
   setParams: (nextParams: Omit<QueryParams<TItem>, 'select'>) => void;
 };
 
-type Meta = {
+export type Meta = {
   page: number;
   pageSize: number;
   total: number;
@@ -61,6 +61,7 @@ export function observableQuery<
   options?: {
     onNext?: (nextPage: number) => void;
     onPrev?: (prevPage: number) => void;
+    onParamsChange?: (query: QueryParams<TItem>) => void;
   },
 ): [ObservableComputed<TItem[]>, QueryFn<TItem>, QueryMeta] {
   const query = observable(params.query || {}) as ObservableObject<
@@ -161,10 +162,29 @@ export function observableQuery<
         options?.onPrev?.(page.get() + 1);
       },
       setParams: (nextParams: Omit<QueryParams<TItem>, 'select'>) => {
-        if (nextParams.limit) limitHelper.set(nextParams.limit);
-        if (nextParams.skip) skipHelper.set(nextParams.skip);
-        if (nextParams.query) query.set(nextParams.query);
-        if (nextParams.sort) sort.set(nextParams.sort);
+        let changed = false;
+        if (nextParams.limit) {
+          limitHelper.set(nextParams.limit);
+          changed = true;
+        }
+        if (nextParams.skip) {
+          skipHelper.set(nextParams.skip);
+          changed = true;
+        }
+        if (nextParams.query) {
+          query.set(nextParams.query);
+          changed = true;
+        }
+        if (nextParams.sort) {
+          sort.set(nextParams.sort);
+          changed = true;
+        }
+        if (changed) {
+          options?.onParamsChange?.({
+            ...params,
+            ...nextParams,
+          });
+        }
       },
     },
     meta,

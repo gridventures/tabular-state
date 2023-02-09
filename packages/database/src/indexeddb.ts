@@ -1,7 +1,18 @@
 /* eslint-disable class-methods-use-this */
 import type { UseStore } from 'idb-keyval';
 
-import { entries, get, delMany, getMany, keys, del, createStore, set, setMany } from 'idb-keyval';
+import {
+  entries,
+  get,
+  delMany,
+  getMany,
+  keys,
+  del,
+  createStore,
+  set,
+  setMany,
+  clear,
+} from 'idb-keyval';
 
 import { DatabaseId, Database, DatabaseItem } from './types';
 
@@ -91,6 +102,10 @@ export class IndexedDbAdapter implements Database {
       return acc;
     }, {});
     return allItems;
+  }
+
+  public async clear() {
+    await clear(this.idb);
   }
 }
 

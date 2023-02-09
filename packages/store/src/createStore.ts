@@ -150,6 +150,13 @@ export function createStore<
           // ignore
         }
       },
+      onParamsChange: (newParams) => {
+        try {
+          options?.onQueryRows?.(tableName, newParams, query.peek());
+        } catch (e) {
+          // ignore
+        }
+      },
     });
     try {
       options?.onQueryRows?.(tableName, params, query.peek());
