@@ -41,12 +41,14 @@ export type QueryFn<TItem> = {
   setParams: (nextParams: Omit<QueryParams<TItem>, 'select'>) => void;
 };
 
-export type QueryMeta = {
-  page: Observable<number>;
-  pageSize: ObservableComputed<number>;
-  total: Observable<number>;
-  canShowMore: ObservableComputed<boolean>;
+type Meta = {
+  page: number;
+  pageSize: number;
+  total: number;
+  canShowMore: boolean;
 };
+
+export type QueryMeta = ObservableComputed<Meta>;
 
 export type ObservableQueryResult<T> = ObservableComputed<T> & QueryFn<T>;
 
@@ -91,6 +93,15 @@ export function observableQuery<
 
   const canShowMore = computed(() => {
     return page.get() < maxPage.get();
+  });
+
+  const meta = computed<Meta>(() => {
+    return {
+      page: page.get(),
+      pageSize: limit.get(),
+      total: total.get(),
+      canShowMore: canShowMore.get(),
+    };
   });
 
   const rows = computed<TItem[]>(() => {
@@ -156,11 +167,6 @@ export function observableQuery<
         if (nextParams.sort) sort.set(nextParams.sort);
       },
     },
-    {
-      page,
-      pageSize: limit,
-      total,
-      canShowMore,
-    },
+    meta,
   ];
 }
