@@ -9,6 +9,12 @@ export type DefaultTable = {
   item: any;
 };
 
+export type SetDatabaseOptions<Tables extends Record<string, DefaultTable>> = {
+  database: Database | undefined;
+  persistentTables: [tableName: keyof Tables & string, idField: string][];
+  onReady?: () => void;
+};
+
 export type Store<Tables extends Record<string, DefaultTable>> = {
   hasTable<TableName extends keyof Tables & string>(name: TableName): boolean;
   setTable<TableName extends keyof Tables & string>(name: TableName): void;
@@ -55,11 +61,10 @@ export type Store<Tables extends Record<string, DefaultTable>> = {
     tableName: TableName,
     params: QueryParams<Tables[TableName]['item']>,
   ): readonly [ObservableComputed<Tables[TableName]['item'][]>, QueryFn, QueryMeta];
-  setDatabase(db: Database): void;
+  setDatabase(options: SetDatabaseOptions<Tables>): void;
 };
 
 export type StoreOptions<Tables extends Record<string, DefaultTable>> = {
-  persistentTables?: [tableName: keyof Tables & string, idField: string][];
   onRevalidate?<TableName extends keyof Tables & string>(
     tableName: TableName,
     rowIds: Tables[TableName]['idField'][],

@@ -1,4 +1,4 @@
-import type { DefaultTable, Store, StoreOptions } from './types';
+import type { DefaultTable, SetDatabaseOptions, Store, StoreOptions } from './types';
 import type { QueryParams } from './utils/queryObservable';
 
 import type { ObservableListenerDispose, ObservableObject } from '@legendapp/state';
@@ -16,8 +16,7 @@ export function createStore<
   type TableNames = keyof Tables & string;
 
   let database: Database | undefined;
-  const persistentTables = options?.persistentTables?.map(([n]) => n) || undefined;
-  const idFields = Object.fromEntries(options?.persistentTables || []);
+  let persistentTables: string[] = [];
   const tables = observable<Record<string, Record<DefaultTable['idField'], DefaultTable['item']>>>(
     {},
   );
@@ -165,7 +164,7 @@ export function createStore<
     dispose = tables.onChange((_v, _g, changes) => {
       changes.forEach((change) => {
         const [tableName, rowId] = change.path;
-        if (persistentTables?.includes(tableName as string) && rowId && database) {
+        if (persistentTables.includes(tableName as string) && rowId && database) {
           database.setItem(
             tableName as string,
             rowId,
@@ -180,13 +179,17 @@ export function createStore<
     dispose?.();
   }
 
-  async function setDatabase(nextDb: Database | undefined, cb?: () => void) {
+  async function setDatabase(databaseOptions: SetDatabaseOptions<Tables>) {
     const isUpdated = !!database;
-    database = nextDb;
+    database = databaseOptions.database;
+
+    const idFields = Object.fromEntries(databaseOptions.persistentTables);
+    persistentTables = databaseOptions.persistentTables?.map(([n]) => n) || undefined;
+
     if (isUpdated || !database) {
       cleanupListener();
     }
-    if (isUpdated && !database) {
+    if (isUpdated) {
       Object.keys(tables.peek()).forEach((tableName) => {
         delTable(tableName);
       });
@@ -209,7 +212,7 @@ export function createStore<
       });
       mountListener();
     }
-    cb?.();
+    databaseOptions.onReady?.();
   }
 
   return {
