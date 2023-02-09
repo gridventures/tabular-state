@@ -202,7 +202,8 @@ export function createStore<
     if (database && persistentTables) {
       const allRows = await database.getAllItems();
       Object.entries(allRows).forEach(([tableName, rows]) => {
-        const idField = idFields[tableName] || 'id';
+        const idField =
+          idFields[tableName] || databaseOptions.dynamicPersistentTables?.(tableName) || 'id';
         rows.forEach((item) => {
           setRow(tableName, item[idField] as string | number, item);
         });
