@@ -28,6 +28,11 @@ export type Store<Tables extends Record<string, DefaultTable>> = {
   getRow<TableName extends keyof Tables & string>(
     tableName: TableName,
     rowId: Tables[TableName]['idField'],
+    /**
+     * @description if callback onGetRow should not be triggered
+     * @default false
+     */
+    silent?: boolean,
   ): ObservableObject<Tables[TableName]['item']>;
   setRow<TableName extends keyof Tables & string>(
     tableName: TableName,
@@ -46,6 +51,11 @@ export type Store<Tables extends Record<string, DefaultTable>> = {
     tableName: TableName,
     rowId: Tables[TableName]['idField'],
     cellName: CellKey,
+    /**
+     * @description if callback onGetCell should not be triggered
+     * @default false
+     */
+    silent?: boolean,
   ): ObservableObject<Tables[TableName]['item'][CellKey]>;
   setCell<TableName extends keyof Tables & string, CellKey extends keyof Tables[TableName]['item']>(
     tableName: TableName,
@@ -61,6 +71,11 @@ export type Store<Tables extends Record<string, DefaultTable>> = {
   queryRows<TableName extends keyof Tables & string>(
     tableName: TableName,
     params: QueryParams<Tables[TableName]['item']>,
+    /**
+     * @description if callback onQueryRows should not be triggered
+     * @default false
+     */
+    silent?: boolean,
   ): readonly [
     ObservableComputed<Tables[TableName]['item'][]>,
     QueryFn<Tables[TableName]['item']>,
