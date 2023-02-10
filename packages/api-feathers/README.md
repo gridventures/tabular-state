@@ -19,12 +19,49 @@ yarn add @tabular-state/api-feathers
 ## Usage
 
 ```ts
-import { createFeathersClientAdapter } from '@tabular-state/api-feathers';
-
-const store = createStore<Tables>({});
+import { createFeathersClientAdapter, toFeathersQuery } from '@tabular-state/api-feathers';
 
 const feathersClient = feathers();
 // ... configure feathers client
+
+// you do not need to handle response values from feathersClient!
+// response values are handled by hooks inside createFeathersClientAdapter
+
+const store = createStore<Tables>({
+  onRevalidate(tableName, itemIds) {
+    feathersClient
+      .service(tableName)
+      .find({
+        query: {
+          id: {
+            $in: itemIds,
+          },
+        },
+      })
+      .catch((error) => {
+        // handle error
+      });
+  },
+  onGetRow: (tableName, itemId) => {
+    feathersClient
+      .service(tableName)
+      .get(itemId)
+      .catch((error) => {
+        // handle error
+      });
+  },
+  onQueryRows: (tableName, query) => {
+    const feathersQuery = toFeathersQuery(query);
+    feathersClient
+      .service(tableName)
+      .find({
+        query: feathersQuery,
+      })
+      .catch((error) => {
+        // handle error
+      });
+  },
+});
 
 feathers.configure(
   createFeathersClientAdapter({
@@ -51,3 +88,9 @@ feathers.configure(
   }),
 );
 ```
+
+## Explanation
+
+This package provides a simple [Feathers](https://feathersjs.com/) client adapter for [@tabular-state/store](../store/README.md) by using hooks and socket events.
+
+It uses the hooks `after.find`, `after.get`, `after.create`, `after.update`, `after.patch` and `after.remove` to update the store.
