@@ -15,6 +15,13 @@
 
 - [@tabular-state/api-feathers](./packages/api-feathers/)
 
+## Frontend Integration
+
+- React: [@legendapp/state/react](https://legendapp.com/open-source/state/react-basics/)
+- Solid:
+  - dedicated package coming soon
+  - basic integration: [SolidJS Integration](./docs/solid-js-integration.md)
+
 ## License
 
 MIT © [Gridventures GmbH](https://gridventures.de)
