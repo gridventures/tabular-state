@@ -11,6 +11,10 @@
 
 [@tabular-state/database](./packages/database/)
 
+## Implement APIs
+
+- [@tabular-state/api-feathers](./packages/api-feathers/)
+
 ## License
 
 MIT © [Gridventures GmbH](https://gridventures.de)
