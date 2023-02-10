@@ -61,12 +61,15 @@ export function createStore<
   function getRow<TableName extends TableNames>(
     tableName: TableName,
     rowId: Tables[TableName]['idField'],
+    silent = false,
   ) {
     const row = $getRawRow(tableName, rowId) as ObservableObject<Tables[TableName]['item']>;
-    try {
-      options?.onGetRow?.(tableName, rowId, row.peek());
-    } catch (e) {
-      // ignore
+    if (!silent) {
+      try {
+        options?.onGetRow?.(tableName, rowId, row.peek());
+      } catch (e) {
+        // ignore
+      }
     }
     return row;
   }
@@ -100,13 +103,16 @@ export function createStore<
     tableName: TableName,
     rowId: Tables[TableName]['idField'],
     cellKey: CellKey,
+    silent = false,
   ) {
     const row = $getRawRow(tableName, rowId);
     const cell = row[cellKey];
-    try {
-      options?.onGetCell?.(tableName, rowId, cellKey, cell.peek());
-    } catch (e) {
-      // ignore
+    if (!silent) {
+      try {
+        options?.onGetCell?.(tableName, rowId, cellKey, cell.peek());
+      } catch (e) {
+        // ignore
+      }
     }
     return cell as ObservableObject<Tables[TableName]['item'][CellKey]>;
   }
@@ -133,10 +139,12 @@ export function createStore<
   function queryRows<TableName extends TableNames>(
     tableName: TableName,
     params: QueryParams<Tables[TableName]['item']>,
+    silent = false,
   ) {
     const table = getTable(tableName);
     const [query, queryFn, queryMeta] = observableQuery(table, params, {
       onNext: (nextPage) => {
+        if (silent) return;
         try {
           options?.onQueryRows?.(
             tableName,
@@ -151,6 +159,7 @@ export function createStore<
         }
       },
       onParamsChange: (newParams) => {
+        if (silent) return;
         try {
           options?.onQueryRows?.(tableName, newParams, query.peek());
         } catch (e) {

@@ -126,5 +126,11 @@ module.exports = {
         ],
       },
     },
+    {
+      files: ['packages/solid/src/**/*.{ts,tsx}'],
+      rules: {
+        'import/no-extraneous-dependencies': 'off',
+      },
+    },
   ],
 };

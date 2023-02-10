@@ -97,7 +97,7 @@ console.log(user.get());
 ## Set and Get Cells
 
 > **Note**
-> Cells are managed by the store and are not directly accessible. You can only get a cell by its id.
+> Cells are managed by the store and are not directly accessible. You can only get a cell by its key.
 
 For reactivity have a look into [Legend-State Docs](https://www.legendapp.com/open-source/state/reactivity/).
 
@@ -119,7 +119,7 @@ console.log(userAge.peek()); // 43
 
 ## Querying
 
-Querying is based on [sift](https://www.npmjs.com/package/sift) which is a monog-query like implementation for JavaScript.
+Querying is based on [sift](https://www.npmjs.com/package/sift) which is a mongo-query like implementation for JavaScript.
 
 ```ts
 const [results, queryFn, queryMeta] = store.queryRows('posts', {
