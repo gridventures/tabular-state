@@ -1,9 +1,17 @@
 import type { Sort } from './sort';
-import type { Observable, ObservableComputed, ObservableObject } from '@legendapp/state';
 
 import type { BasicValueQuery } from 'sift';
 
-import { computed, observable } from '@legendapp/state';
+import {
+  batch,
+  ObservableArray,
+  ObservableComputed,
+  ObservableObject,
+  computed,
+  observable,
+  observe,
+  lockObservable,
+} from '@legendapp/state';
 
 import sift from 'sift';
 
@@ -46,11 +54,14 @@ export type Meta = {
   pageSize: number;
   total: number;
   canShowMore: boolean;
+  totalRowsAvailable: number;
 };
 
 export type QueryMeta = ObservableComputed<Meta>;
 
-export type ObservableQueryResult<T> = ObservableComputed<T> & QueryFn<T>;
+// type ObservableQueryResult<T> = ObservableComputed<T> & QueryFn<T>;
+
+export type ObservableQueryResult<T> = ObservableArray<T[]>;
 
 export function observableQuery<
   TItem extends Record<string, any>,
@@ -63,7 +74,7 @@ export function observableQuery<
     onPrev?: (prevPage: number) => void;
     onParamsChange?: (query: QueryParams<TItem>) => void;
   },
-): [ObservableComputed<TItem[]>, QueryFn<TItem>, QueryMeta] {
+): [ObservableQueryResult<TItem>, QueryFn<TItem>, QueryMeta] {
   const query = observable(params.query || {}) as ObservableObject<
     Query<TItem> | CombineQuery<TItem>
   >;
@@ -71,10 +82,11 @@ export function observableQuery<
   const select = observable(params.select || []);
   const page = observable(1);
   const total = observable(0);
-  const totalRows = observable(0);
+  const totalRowsAvailable = observable(0);
 
   const limitHelper = observable(params.limit || 20);
   const skipHelper = observable(params.skip || 0);
+  const changeHelper = observable(0);
 
   const skip = computed(() => {
     if (params.style === 'paginated') {
@@ -89,7 +101,7 @@ export function observableQuery<
   });
 
   const maxPage = computed(() => {
-    return Math.ceil(totalRows.get() / limit.get());
+    return Math.ceil(totalRowsAvailable.get() / limitHelper.get());
   });
 
   const canShowMore = computed(() => {
@@ -102,10 +114,15 @@ export function observableQuery<
       pageSize: limit.get(),
       total: total.get(),
       canShowMore: canShowMore.get(),
+      totalRowsAvailable: totalRowsAvailable.get(),
     };
   });
 
-  const rows = computed<TItem[]>(() => {
+  const rowsStore = observable<TItem[]>([]);
+  lockObservable(rowsStore, true);
+
+  const queryItems = () => {
+    changeHelper.get();
     const table = tableObservable.get();
 
     let list = Object.values(table || {}).slice();
@@ -125,7 +142,7 @@ export function observableQuery<
     const limitObs = limit.get();
     const skipObs = skip.get();
 
-    totalRows.set(list.length - skipHelper.peek());
+    totalRowsAvailable.set(list.length - skipHelper.peek());
 
     const sliceStart = skipObs;
     const sliceEnd = skipObs + limitObs;
@@ -145,11 +162,34 @@ export function observableQuery<
       });
     }
 
-    return list;
+    batch(() => {
+      lockObservable(rowsStore, false);
+      rowsStore.set([]);
+      list.forEach((row) => {
+        rowsStore.push(row);
+      });
+      lockObservable(rowsStore, true);
+    });
+  };
+
+  tableObservable.onChange(() => {
+    changeHelper.set((c) => c + 1);
+    queryItems();
+  });
+
+  observe(() => {
+    sort.get();
+    select.get();
+    query.get();
+    limitHelper.get();
+    skipHelper.get();
+    page.get();
+    changeHelper.get();
+    queryItems();
   });
 
   return [
-    rows,
+    rowsStore,
     {
       next: () => {
         if (!canShowMore.peek()) return;

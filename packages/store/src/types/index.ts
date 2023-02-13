@@ -1,8 +1,8 @@
 import type { Database } from '@tabular-state/database';
 
-import { ObservableComputed, ObservableObject } from '@legendapp/state';
+import { ObservableObject } from '@legendapp/state';
 
-import { QueryFn, QueryMeta, QueryParams } from '../utils/queryObservable';
+import { ObservableQueryResult, QueryFn, QueryMeta, QueryParams } from '../utils/queryObservable';
 
 export type DefaultTable = {
   idField: string | number;
@@ -77,7 +77,7 @@ export type Store<Tables extends Record<string, DefaultTable>> = {
      */
     silent?: boolean,
   ): readonly [
-    ObservableComputed<Tables[TableName]['item'][]>,
+    ObservableQueryResult<Tables[TableName]['item']>,
     QueryFn<Tables[TableName]['item']>,
     QueryMeta,
   ];
