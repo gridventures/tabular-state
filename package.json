@@ -5,7 +5,7 @@
   "scripts": {
     "lint": "eslint --config ./.eslintrc.js --ignore-path ./.eslintignore --cache",
     "git-hooks:commit-msg": "commitlint --edit",
-    "git-hooks:pre-commit": "lint-staged && pnpm run test",
+    "git-hooks:pre-commit": "lint-staged",
     "test": "lerna run test:coverage",
     "release": "lerna publish --no-private",
     "preversion": "pnpm run test && lerna run build",
