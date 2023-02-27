@@ -189,7 +189,7 @@ console.log(queryMeta.canShowMore.get());
 
 ## Mount hooks to listen to reads
 
-You can listen to all reads by using hooks (before, after, error) on the methods `getTable`, `getRow`, `getCell` and `queryRows`.
+You can listen to all reads by using hooks (before, after, error) on the methods `getTable`, `getRow`, `getCell`, `setRow`, `setCell`, `delRow`, `delCell` and `queryRows`.
 
 ```ts
 const store = createStore();
