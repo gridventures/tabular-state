@@ -1,6 +1,6 @@
 {
   "name": "@tabular-state/database",
-  "version": "0.5.0-alpha.0",
+  "version": "1.0.0-alpha.0",
   "repository": {
     "type": "git",
     "url": "https://github.com/gridventures/tabular-state",
@@ -27,7 +27,7 @@
     "preview": "vite preview"
   },
   "devDependencies": {
-    "@tabular-state/store": "workspace:0.7.2-alpha.0",
+    "@tabular-state/store": "workspace:1.0.0-alpha.0",
     "@vitest/coverage-c8": "^0.29.1",
     "fake-indexeddb": "^4.0.1",
     "idb-keyval": "^6.2.0",

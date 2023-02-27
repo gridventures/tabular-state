@@ -1,6 +1,6 @@
 {
   "name": "@tabular-state/api-feathers",
-  "version": "0.7.2-alpha.0",
+  "version": "1.0.0-alpha.0",
   "repository": {
     "type": "git",
     "url": "https://github.com/gridventures/tabular-state",
@@ -28,6 +28,6 @@
   },
   "devDependencies": {
     "@feathersjs/feathers": "5.0.0-pre.36",
-    "@tabular-state/store": "^0.7.2-alpha.0"
+    "@tabular-state/store": "^1.0.0-alpha.0"
   }
 }
