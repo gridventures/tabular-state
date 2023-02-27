@@ -5,9 +5,10 @@
   "scripts": {
     "lint": "eslint --config ./.eslintrc.js --ignore-path ./.eslintignore --cache",
     "git-hooks:commit-msg": "commitlint --edit",
-    "git-hooks:pre-commit": "lint-staged",
+    "git-hooks:pre-commit": "lint-staged && pnpm run test",
+    "test": "lerna run test:coverage",
     "release": "lerna publish --no-private",
-    "preversion": "lerna run build",
+    "preversion": "pnpm run test && lerna run build",
     "prepare": "husky install"
   },
   "keywords": [],
