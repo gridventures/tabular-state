@@ -8,11 +8,7 @@ A database adapter for [@tabular-state/store](../store/README.md) to persist sta
 ```ts
 import { createStore } from '@tabular-state/store';
 
-const store = createStore<Tables>({
-  onRevalidate(tableName: 'users', itemIds: number[]) {
-    // do something after persisted state has been loaded
-  },
-});
+const store = createStore<Tables>();
 ```
 
 ## Using IndexedDB
@@ -34,21 +30,25 @@ yarn add @tabular-state/database idb-keyval
 ```ts
 import { createIndexedDbAdapter } from '@tabular-state/database';
 
-const database = ceateIndexedDbAdapter();
-// or with namespace
-const database = ceateIndexedDbAdapter('account-1');
-const persistentTables = [
-  // [TableName, IdField]
-  ['users', 'id'],
-];
-
-store.setDatabase({
-  database,
-  persistentTables,
-  onReady() {
-    // do something after persisted state has been loaded
+const database = ceateIndexedDbAdapter({
+  autoPersistTables: [['users', 'id']],
+  checkAutoPersistTables(tableName) {
+    if (tableName === 'any-dynamic-database') {
+      return 'customIdField';
+    }
+    return false;
+  },
+  onRevalidate(table, ids) {
+    // do something when persisted state has been revalidated
   },
 });
+// or with specific namespace
+const database = ceateIndexedDbAdapter({
+  namespace: 'account-1',
+  // ...
+});
+
+store.plugin(database);
 ```
 
 ## Namespaces
@@ -57,18 +57,5 @@ It is possible to implement splitted databases by switching the database namespa
 
 ```ts
 database.setNamespace('account-2');
-// needs to replace state with persisted state from other namespace
-store.setDatabase({
-  database,
-  persistentTables,
-  dynamicPersistentTables(tableName) {
-    if (tableName === 'any-dynamic-database') {
-      return 'customIdField';
-    }
-    return false;
-  },
-  onReady() {
-    // do something after persisted state has been loaded
-  },
-});
+// this will clear current store and reload persisted state from account-2
 ```

@@ -30,7 +30,6 @@
     "test:coverage": "vitest run --coverage"
   },
   "devDependencies": {
-    "@tabular-state/database": "link:../database",
     "@vitest/coverage-c8": "^0.29.1",
     "vitest": "^0.29.1"
   },

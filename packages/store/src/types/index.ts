@@ -5,18 +5,10 @@ import type {
   QueryParams,
 } from '../utils/queryObservable';
 import type { ObservableObject } from '@legendapp/state';
-import type { Database } from '@tabular-state/database';
 
 export type DefaultTable = {
   idField: string | number;
   item: any;
-};
-
-export type SetDatabaseOptions<Tables extends Record<string, DefaultTable>> = {
-  database: Database | undefined;
-  persistentTables: [tableName: keyof Tables & string, idField: string][];
-  dynamicPersistentTables?: (tableName: keyof Tables & string) => string | false; // returns idField
-  onReady?: () => void;
 };
 
 export type HookReturn = () => void;

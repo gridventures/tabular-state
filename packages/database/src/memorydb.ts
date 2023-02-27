@@ -28,9 +28,9 @@ export class MemoryDbAdapter implements Database {
     if (!this.data[namespace]) {
       this.data[namespace] = new Map();
     }
-    if (oldNs !== namespace) {
+    if (oldNs !== namespace && this.storeInstance) {
+      this.storeInstance.clear();
       this.revalidate();
-      this.storeInstance?.clear();
     }
   }
 

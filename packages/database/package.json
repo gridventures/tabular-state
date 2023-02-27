@@ -27,13 +27,12 @@
     "preview": "vite preview"
   },
   "devDependencies": {
-    "@tabular-state/store": "workspace:1.0.0-alpha.0",
     "@vitest/coverage-c8": "^0.29.1",
-    "fake-indexeddb": "^4.0.1",
     "idb-keyval": "^6.2.0",
     "vitest": "^0.29.1"
   },
-  "peerDependencies": {
+  "dependencies": {
+    "@tabular-state/store": "1.0.0-alpha.0",
     "idb-keyval": "^6.2.0"
   }
 }

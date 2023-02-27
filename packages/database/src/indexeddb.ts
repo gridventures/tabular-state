@@ -41,9 +41,9 @@ export class IndexedDbAdapter implements Database {
     const oldNs = this.namespace;
     this.namespace = namespace;
     this.idb = createStore(namespace, 'keyval');
-    if (oldNs !== namespace) {
+    if (oldNs !== namespace && this.storeInstance) {
+      this.storeInstance.clear();
       this.revalidate();
-      this.storeInstance?.clear();
     }
   }
 
