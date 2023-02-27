@@ -27,39 +27,37 @@ const feathersClient = feathers();
 // you do not need to handle response values from feathersClient!
 // response values are handled by hooks inside createFeathersClientAdapter
 
-const store = createStore<Tables>({
-  onRevalidate(tableName, itemIds) {
-    feathersClient
-      .service(tableName)
-      .find({
-        query: {
-          id: {
-            $in: itemIds,
-          },
-        },
-      })
-      .catch((error) => {
-        // handle error
-      });
-  },
-  onGetRow: (tableName, itemId) => {
-    feathersClient
-      .service(tableName)
-      .get(itemId)
-      .catch((error) => {
-        // handle error
-      });
-  },
-  onQueryRows: (tableName, query) => {
-    const feathersQuery = toFeathersQuery(query);
-    feathersClient
-      .service(tableName)
-      .find({
-        query: feathersQuery,
-      })
-      .catch((error) => {
-        // handle error
-      });
+const store = createStore<Tables>();
+
+store.plugin({
+  mount: () => {
+    const disposeGetRow = store.hook('before', 'getRow', (ctx) => {
+      const { table, rowId } = ctx.params;
+      feathersClient
+        .service(table)
+        .get(rowId)
+        .catch((error) => {
+          // handle error
+        });
+    });
+
+    const disposeQueryRows = store.hook('before', 'queryRows', (ctx) => {
+      const { table, query } = ctx.params;
+      const feathersQuery = toFeathersQuery(query);
+      feathersClient
+        .service(table)
+        .find({
+          query: feathersQuery,
+        })
+        .catch((error) => {
+          // handle error
+        });
+    });
+
+    return () => {
+      disposeGetRow();
+      disposeQueryRows();
+    };
   },
 });
 
