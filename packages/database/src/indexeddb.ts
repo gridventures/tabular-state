@@ -1,5 +1,6 @@
 /* eslint-disable class-methods-use-this */
-import type { DatabaseId, Database, DatabaseItem } from './types';
+import type { DatabaseId, Database, DatabaseItem, DatabaseOptions } from './types';
+import type { StoreInstance } from '@tabular-state/store';
 import type { UseStore } from 'idb-keyval';
 
 import {
@@ -20,14 +21,30 @@ export class IndexedDbAdapter implements Database {
 
   private idb: UseStore;
 
-  constructor(namespace = 'default') {
-    this.namespace = namespace;
-    this.idb = createStore(namespace, 'keyval');
+  private autoPersistTables: DatabaseOptions['autoPersistTables'] | undefined;
+
+  private checkAutoPersistTables: DatabaseOptions['checkAutoPersistTables'] | undefined;
+
+  private onRevalidate: DatabaseOptions['onRevalidate'] | undefined;
+
+  private storeInstance: StoreInstance<any> | undefined;
+
+  constructor(options?: DatabaseOptions) {
+    this.namespace = options?.namespace || 'default';
+    this.idb = createStore(this.namespace, 'keyval');
+    this.autoPersistTables = options?.autoPersistTables;
+    this.checkAutoPersistTables = options?.checkAutoPersistTables;
+    this.onRevalidate = options?.onRevalidate;
   }
 
   public setNamespace(namespace: string) {
+    const oldNs = this.namespace;
     this.namespace = namespace;
     this.idb = createStore(namespace, 'keyval');
+    if (oldNs !== namespace) {
+      this.revalidate();
+      this.storeInstance?.clear();
+    }
   }
 
   private buildKey(tableName: string, itemId: DatabaseId) {
@@ -36,7 +53,7 @@ export class IndexedDbAdapter implements Database {
 
   private getTableAndIdByKey(key: IDBValidKey) {
     const [tableName, itemId] = key.toString().split('/-/');
-    return [tableName, itemId];
+    return [tableName, itemId] as const;
   }
 
   private async getAllKeys(tableName: string) {
@@ -106,8 +123,98 @@ export class IndexedDbAdapter implements Database {
   public async clear() {
     await clear(this.idb);
   }
+
+  private revalidate() {
+    this.getAllItems().then((items) => {
+      this.storeInstance?.batch(() => {
+        Object.entries(items).forEach(([table, rows]) => {
+          const autoPersistTables =
+            this.autoPersistTables?.find(([t]) => t === table) ||
+            this.checkAutoPersistTables?.(table);
+          if (!autoPersistTables) return;
+          const idField = Array.isArray(autoPersistTables)
+            ? autoPersistTables[1]
+            : autoPersistTables;
+          const ids: DatabaseId[] = [];
+          rows.forEach((row) => {
+            const itemId = row[idField];
+            if (!itemId) return;
+            ids.push(itemId);
+            this.storeInstance?.setRow(table, itemId, row, true);
+          });
+          this.onRevalidate?.(table, ids);
+        });
+      });
+    });
+  }
+
+  public mount(store: StoreInstance<any>) {
+    const runHook = (
+      ctx: { params: { table: string; rowId?: DatabaseId | undefined } },
+      cb: (table: string, rowId: DatabaseId) => Promise<void>,
+    ) => {
+      return new Promise<void>((res, rej) => {
+        const { table, rowId } = ctx.params;
+        if (
+          !rowId ||
+          this.autoPersistTables?.some(([t]) => t === table) === false ||
+          this.checkAutoPersistTables?.(table) === undefined
+        ) {
+          res();
+          return;
+        }
+
+        cb(table, rowId)
+          .then(() => {
+            res();
+          })
+          .catch((e) => {
+            rej(e);
+          });
+      });
+    };
+
+    const afterSetRowHook = store.hook('after', 'setRow', (ctx) => {
+      return runHook(ctx, async (table, rowId) => {
+        const row = store.getRow(table, rowId).peek();
+        if (!row) return;
+        await this.setItem(table, rowId, row);
+      });
+    });
+
+    const afterDelRowHook = store.hook('after', 'delRow', (ctx) => {
+      return runHook(ctx, (table, rowId) => this.delItem(table, rowId));
+    });
+
+    const afterSetCellHook = store.hook('after', 'setCell', (ctx) => {
+      return runHook(ctx, async (table, rowId) => {
+        const row = store.getRow(table, rowId).peek();
+        if (!row) return;
+        await this.setItem(table, rowId, row);
+      });
+    });
+
+    const afterDelCellHook = store.hook('after', 'delCell', (ctx) => {
+      return runHook(ctx, async (table, rowId) => {
+        const row = store.getRow(table, rowId).peek();
+        if (!row) return;
+        await this.setItem(table, rowId, row);
+      });
+    });
+
+    this.storeInstance = store;
+
+    this.revalidate();
+
+    return () => {
+      afterSetRowHook();
+      afterSetCellHook();
+      afterDelRowHook();
+      afterDelCellHook();
+    };
+  }
 }
 
-export const createIndexedDbAdapter = (namespace?: string): Database => {
-  return new IndexedDbAdapter(namespace);
+export const createIndexedDbAdapter = (options?: DatabaseOptions): Database => {
+  return new IndexedDbAdapter(options);
 };

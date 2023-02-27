@@ -1,8 +1,7 @@
-import { defineConfig } from 'vite';
+import { resolve } from 'path';
 
 import dts from 'vite-plugin-dts';
-
-import { resolve } from 'path';
+import { defineConfig } from 'vitest/config'; // eslint-disable-line import/no-unresolved
 
 export default defineConfig({
   plugins: [
@@ -30,4 +29,5 @@ export default defineConfig({
       },
     },
   },
+  test: {},
 });

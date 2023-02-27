@@ -1,113 +1,232 @@
 /* eslint-disable class-methods-use-this */
-import type { Database } from './types';
+import type { DatabaseId, Database, DatabaseItem, DatabaseOptions } from './types';
+import type { StoreInstance } from '@tabular-state/store';
 
-type Id = string | number;
-type Item = any; // eslint-disable-line @typescript-eslint/no-explicit-any
-
-export class MemoryDatabase implements Database {
+export class MemoryDbAdapter implements Database {
   namespace = 'default';
 
-  constructor(namespace = 'default') {
-    this.namespace = namespace;
-    this.setNamespace(namespace);
+  private data: Record<string, Map<string, DatabaseItem>> = {};
+
+  private autoPersistTables: DatabaseOptions['autoPersistTables'] | undefined;
+
+  private checkAutoPersistTables: DatabaseOptions['checkAutoPersistTables'] | undefined;
+
+  private onRevalidate: DatabaseOptions['onRevalidate'] | undefined;
+
+  private storeInstance: StoreInstance<any> | undefined;
+
+  constructor(options?: DatabaseOptions) {
+    this.autoPersistTables = options?.autoPersistTables;
+    this.checkAutoPersistTables = options?.checkAutoPersistTables;
+    this.onRevalidate = options?.onRevalidate;
+    this.setNamespace(options?.namespace || 'default');
   }
 
-  private data: Record<string, Map<string, Item>> = {
-    default: new Map<string, Item>(),
-  };
-
-  setNamespace(namespace: string) {
-    Object.assign(this.data, {
-      [namespace]: new Map(),
-    });
+  public setNamespace(namespace: string) {
+    const oldNs = this.namespace;
     this.namespace = namespace;
+    if (!this.data[namespace]) {
+      this.data[namespace] = new Map();
+    }
+    if (oldNs !== namespace) {
+      this.revalidate();
+      this.storeInstance?.clear();
+    }
   }
 
-  private buildKey(tableName: string, itemId: string | number) {
+  private get db() {
+    return this.data[this.namespace];
+  }
+
+  private buildKey(tableName: string, itemId: DatabaseId) {
     return `${tableName}/-/${itemId}`;
   }
 
-  setItem(tableName: string, itemId: Id, value: Item) {
+  private getTableAndIdByKey(key: IDBValidKey) {
+    const [tableName, itemId] = key.toString().split('/-/');
+    return [tableName, itemId] as const;
+  }
+
+  private getAllKeys(tableName: string) {
+    return new Promise<string[]>((res) => {
+      const allKeys = Array.from(this.db.keys());
+      const tableKeys = allKeys.filter((key) => key.toString().includes(`${tableName}/`));
+      res(tableKeys);
+    });
+  }
+
+  public async setItem(tableName: string, itemId: DatabaseId, value: DatabaseItem) {
+    // await set(this.buildKey(tableName, itemId), value, this.idb);
     return new Promise<void>((res) => {
-      this.data[this.namespace].set(this.buildKey(tableName, itemId), value);
+      this.db.set(this.buildKey(tableName, itemId), value);
       res();
     });
   }
 
-  setItems(tableName: string, items: [itemId: Id, value: Item][]) {
+  public setItems(tableName: string, items: [itemId: DatabaseId, value: DatabaseItem][]) {
     return new Promise<void>((res) => {
       items.forEach(([itemId, value]) => {
-        this.data[this.namespace].set(this.buildKey(tableName, itemId), value);
+        this.db.set(this.buildKey(tableName, itemId), value);
       });
       res();
     });
   }
 
-  delItem(tableName: string, itemId: Id) {
+  public delItem(tableName: string, itemId: DatabaseId) {
     return new Promise<void>((res) => {
-      this.data[this.namespace].delete(this.buildKey(tableName, itemId));
+      this.db.delete(this.buildKey(tableName, itemId));
       res();
     });
   }
 
-  delItems(tableName: string, itemIds?: Id[]) {
+  public delItems(tableName: string, itemIds?: DatabaseId[]) {
     return new Promise<void>((res) => {
-      if (!itemIds) {
-        this.data[this.namespace].forEach((v, key) => {
-          if (key.startsWith(`${tableName}:`)) {
-            this.data[this.namespace].delete(key);
-          }
-        });
-      } else {
+      if (itemIds) {
         itemIds.forEach((itemId) => {
-          this.data[this.namespace].delete(this.buildKey(tableName, itemId));
+          this.db.delete(this.buildKey(tableName, itemId));
         });
+        res();
+        return;
       }
-      res();
-    });
-  }
-
-  getItem(tableName: string, itemId: Id) {
-    return new Promise<Item>((res) => {
-      const value = this.data[this.namespace].get(this.buildKey(tableName, itemId));
-      res(value);
-    });
-  }
-
-  getItems(tableName: string, itemIds?: Id[]) {
-    return new Promise<Item[]>((res) => {
-      if (!itemIds) {
-        let values = Array.from(this.data[this.namespace].entries());
-        values = values
-          .filter(([k]) => {
-            return k.startsWith(`${tableName}/`);
-          })
-          .map(([, v]) => v);
-        res(values);
-      } else {
-        const values = itemIds.map((itemId) => {
-          return this.data[this.namespace].get(this.buildKey(tableName, itemId));
+      this.getAllKeys(tableName).then((tableKeys) => {
+        tableKeys.forEach((key) => {
+          this.db.delete(key);
         });
-        res(values);
+        res();
+      });
+    });
+  }
+
+  public getItem(tableName: string, itemId: DatabaseId) {
+    return new Promise<DatabaseItem | undefined>((res) => {
+      const item = this.db.get(this.buildKey(tableName, itemId));
+      res(item);
+    });
+  }
+
+  public async getItems(tableName: string, itemIds?: DatabaseId[]) {
+    return new Promise<DatabaseItem[]>((res) => {
+      if (itemIds) {
+        const items = itemIds
+          .map((itemId) => this.db.get(this.buildKey(tableName, itemId)))
+          .filter((v) => v !== undefined);
+        res(items as DatabaseItem[]);
       }
     });
   }
 
-  getAllItems() {
-    return new Promise<Record<string, Item[]>>((res) => {
-      const values = this.data[this.namespace].entries();
-      res(Object.fromEntries(values));
+  public async getAllItems() {
+    return new Promise<Record<string, any[]>>((res) => {
+      const items = Array.from(this.db.entries());
+      const allItems = items.reduce<Record<string, any[]>>((acc, [key, value]) => {
+        const [tableName] = this.getTableAndIdByKey(key);
+        if (!acc[tableName]) {
+          acc[tableName] = [];
+        }
+        acc[tableName].push(value);
+        return acc;
+      }, {});
+      res(allItems);
     });
   }
 
-  clear() {
+  public async clear() {
     return new Promise<void>((res) => {
-      this.data[this.namespace].clear();
+      this.db.clear();
       res();
     });
+  }
+
+  private revalidate() {
+    this.getAllItems().then((items) => {
+      this.storeInstance?.batch(() => {
+        Object.entries(items).forEach(([table, rows]) => {
+          const autoPersistTables =
+            this.autoPersistTables?.find(([t]) => t === table) ||
+            this.checkAutoPersistTables?.(table);
+          if (!autoPersistTables) return;
+          const idField = Array.isArray(autoPersistTables)
+            ? autoPersistTables[1]
+            : autoPersistTables;
+          const ids: DatabaseId[] = [];
+          rows.forEach((row) => {
+            const itemId = row[idField];
+            if (!itemId) return;
+            ids.push(itemId);
+            this.storeInstance?.setRow(table, itemId, row, true);
+          });
+          this.onRevalidate?.(table, ids);
+        });
+      });
+    });
+  }
+
+  public mount(store: StoreInstance<any>) {
+    const runHook = (
+      ctx: { params: { table: string; rowId?: DatabaseId | undefined } },
+      cb: (table: string, rowId: DatabaseId) => Promise<void>,
+    ) => {
+      return new Promise<void>((res, rej) => {
+        const { table, rowId } = ctx.params;
+        if (
+          rowId === undefined ||
+          (this.autoPersistTables?.some(([t]) => t === table) === false &&
+            this.checkAutoPersistTables?.(table) === undefined)
+        ) {
+          res();
+          return;
+        }
+        cb(table, rowId)
+          .then(() => {
+            res();
+          })
+          .catch((e) => {
+            rej(e);
+          });
+      });
+    };
+
+    const afterSetRowHook = store.hook('after', 'setRow', (ctx) => {
+      return runHook(ctx, async (table, rowId) => {
+        const row = store.getRow(table, rowId).peek();
+        if (!row) return;
+        await this.setItem(table, rowId, row);
+      });
+    });
+
+    const afterDelRowHook = store.hook('after', 'delRow', (ctx) => {
+      return runHook(ctx, (table, rowId) => this.delItem(table, rowId));
+    });
+
+    const afterSetCellHook = store.hook('after', 'setCell', (ctx) => {
+      return runHook(ctx, async (table, rowId) => {
+        const row = store.getRow(table, rowId).peek();
+        if (!row) return;
+        await this.setItem(table, rowId, row);
+      });
+    });
+
+    const afterDelCellHook = store.hook('after', 'delCell', (ctx) => {
+      return runHook(ctx, async (table, rowId) => {
+        const row = store.getRow(table, rowId).peek();
+        if (!row) return;
+        await this.setItem(table, rowId, row);
+      });
+    });
+
+    this.storeInstance = store;
+
+    this.revalidate();
+
+    return () => {
+      afterSetRowHook();
+      afterSetCellHook();
+      afterDelRowHook();
+      afterDelCellHook();
+    };
   }
 }
 
-export const createMemoryDbAdapter = (namespace?: string): Database => {
-  return new MemoryDatabase(namespace);
+export const createMemoryDbAdapter = (options?: DatabaseOptions): Database => {
+  return new MemoryDbAdapter(options);
 };
