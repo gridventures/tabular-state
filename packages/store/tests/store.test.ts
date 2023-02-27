@@ -319,6 +319,17 @@ describe('createStore', () => {
     store.delRow('users', 1);
     dbItem = await db.getItem('users', 1);
     expect(dbItem).toBeUndefined();
+
+    db.setNamespace('account-2');
+    dbItem = await db.getItem('users', 1);
+    expect(dbItem).toBeUndefined();
+    store.setRow('users', 1, {
+      id: 1,
+      name: 'John',
+      age: 20,
+    });
+    dbItem = await db.getItem('users', 1);
+    expect(dbItem?.id).toBe(1);
   });
 
   it('cleans plugins from store', async () => {
