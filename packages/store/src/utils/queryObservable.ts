@@ -1,18 +1,8 @@
 import type { Sort } from './sort';
-
+import type { ObservableArray, ObservableComputed, ObservableObject } from '@legendapp/state';
 import type { BasicValueQuery } from 'sift';
 
-import {
-  batch,
-  ObservableArray,
-  ObservableComputed,
-  ObservableObject,
-  computed,
-  observable,
-  observe,
-  lockObservable,
-} from '@legendapp/state';
-
+import { batch, computed, observable, observe, lockObservable } from '@legendapp/state';
 import sift from 'sift';
 
 import { siftSort } from './sort';

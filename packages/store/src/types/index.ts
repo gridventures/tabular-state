@@ -1,8 +1,11 @@
+import type {
+  ObservableQueryResult,
+  QueryFn,
+  QueryMeta,
+  QueryParams,
+} from '../utils/queryObservable';
+import type { ObservableObject } from '@legendapp/state';
 import type { Database } from '@tabular-state/database';
-
-import { ObservableObject } from '@legendapp/state';
-
-import { ObservableQueryResult, QueryFn, QueryMeta, QueryParams } from '../utils/queryObservable';
 
 export type DefaultTable = {
   idField: string | number;
@@ -16,7 +19,81 @@ export type SetDatabaseOptions<Tables extends Record<string, DefaultTable>> = {
   onReady?: () => void;
 };
 
+export type HookReturn = () => void;
+export type HookWhen = 'before' | 'after' | 'error';
+export type HookWhat =
+  | 'getTable'
+  | 'getRow'
+  | 'getCell'
+  | 'setRow'
+  | 'setCell'
+  | 'delRow'
+  | 'delCell'
+  | 'queryRows';
+export type HooksContext<
+  Tables extends Record<string, DefaultTable>,
+  TableName extends keyof Tables & string,
+> = {
+  method: HookWhat;
+  params: {
+    table: TableName;
+    rowId?: Tables[TableName]['idField'];
+    cellKey?: keyof Tables[TableName]['item'];
+    query?: QueryParams<Tables[TableName]['item']>;
+  };
+  error?: Error;
+};
+// & (
+//   | {
+//       method: 'getRow';
+//       params: {
+//         tableName: TableName;
+//         rowId: Tables[TableName]['idField'];
+//         cellName?: undefined;
+//         query?: undefined;
+//       };
+//     }
+//   | {
+//       method: 'getCell';
+//       params: {
+//         tableName: TableName;
+//         rowId: Tables[TableName]['idField'];
+//         cellName: keyof Tables[TableName]['item'];
+//         query?: undefined;
+//       };
+//     }
+//   | {
+//       method: 'getTable';
+//       params: {
+//         tableName: TableName;
+//         rowId?: undefined;
+//         cellName?: undefined;
+//         query?: undefined;
+//       };
+//     }
+//   | {
+//       method: 'queryRows';
+//       params: {
+//         tableName: TableName;
+//         rowId?: undefined;
+//         cellName?: undefined;
+//         query: QueryFn<Tables[TableName]['item']>;
+//       };
+//     }
+// );
+export type HookCallback<
+  Tables extends Record<string, DefaultTable>,
+  TableNames extends keyof Tables & string,
+> = (ctx: HooksContext<Tables, TableNames>) => void | Promise<void>;
+export type HookArgs<
+  Tables extends Record<string, DefaultTable>,
+  TableNames extends keyof Tables & string,
+> =
+  | [HookWhen, HookWhat, HookCallback<Tables, TableNames>]
+  | [HookWhen, HookCallback<Tables, TableNames>];
+
 export type Store<Tables extends Record<string, DefaultTable>> = {
+  hook: (...args: HookArgs<Tables, keyof Tables & string>) => HookReturn;
   hasTable<TableName extends keyof Tables & string>(name: TableName): boolean;
   setTable<TableName extends keyof Tables & string>(name: TableName): void;
   delTable<TableName extends keyof Tables & string>(name: TableName): void;
@@ -33,7 +110,7 @@ export type Store<Tables extends Record<string, DefaultTable>> = {
      * @default false
      */
     silent?: boolean,
-  ): ObservableObject<Tables[TableName]['item']>;
+  ): ObservableObject<Tables[TableName]['item'] | undefined>;
   setRow<TableName extends keyof Tables & string>(
     tableName: TableName,
     rowId: Tables[TableName]['idField'],
@@ -56,7 +133,7 @@ export type Store<Tables extends Record<string, DefaultTable>> = {
      * @default false
      */
     silent?: boolean,
-  ): ObservableObject<Tables[TableName]['item'][CellKey]>;
+  ): ObservableObject<Tables[TableName]['item'][CellKey] | undefined>;
   setCell<TableName extends keyof Tables & string, CellKey extends keyof Tables[TableName]['item']>(
     tableName: TableName,
     rowId: Tables[TableName]['idField'],
@@ -81,7 +158,8 @@ export type Store<Tables extends Record<string, DefaultTable>> = {
     QueryFn<Tables[TableName]['item']>,
     QueryMeta,
   ];
-  setDatabase(options: SetDatabaseOptions<Tables>): void;
+  setDatabase(options: SetDatabaseOptions<Tables>): Promise<void>;
+  cleanup(): void;
 };
 
 export type StoreOptions<Tables extends Record<string, DefaultTable>> = {

@@ -1,4 +1,5 @@
 /* eslint-disable class-methods-use-this */
+import type { DatabaseId, Database, DatabaseItem } from './types';
 import type { UseStore } from 'idb-keyval';
 
 import {
@@ -13,8 +14,6 @@ import {
   setMany,
   clear,
 } from 'idb-keyval';
-
-import { DatabaseId, Database, DatabaseItem } from './types';
 
 export class IndexedDbAdapter implements Database {
   namespace: string;

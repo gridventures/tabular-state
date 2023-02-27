@@ -15,8 +15,7 @@
   "eslint.workingDirectories": [
     "packages/store",
     "packages/persist",
-    "packages/feathers",
+    "packages/feathers"
   ],
-  "eslint.packageManager": "pnpm",
-  "typescript.tsdk": "node_modules/typescript/lib",
+  "typescript.tsdk": "node_modules/typescript/lib"
 }

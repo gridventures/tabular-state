@@ -1,5 +1,4 @@
 import type { Query as FeathersQuery } from '@feathersjs/feathers/lib';
-
 import type { QueryParams } from '@tabular-state/store';
 
 const IGNORED_OPERATORS = ['$where'];

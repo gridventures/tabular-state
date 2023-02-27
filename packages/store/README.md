@@ -187,20 +187,36 @@ console.log(queryMeta.canShowMore.peek());
 console.log(queryMeta.canShowMore.get());
 ```
 
-## Listen to reads
+## Mount hooks to listen to reads
 
-You can listen to all reads by using `onGetCell`, `onGetRow` and `onQueryRows`.
+You can listen to all reads by using hooks (before, after, error) on the methods `getTable`, `getRow`, `getCell` and `queryRows`.
 
 ```ts
-const store = createStore({
-  onGetCell(tableName, rowId, cellName) {
-    // e.g. revalidate cell by api call and update cell via store.setCell
-  },
-  onGetRow(tableName, rowId, row) {
-    // e.g. revalidate row by api call and update row via store.setRow
-  },
-  onQueryRows(tableName, query) {
-    // e.g. revalidate query by api call and update rows via store.setRow
-  },
+const store = createStore();
+
+const dispose = store.hook('before', 'getRow', (ctx) => {
+  // ctx.method = 'getRow'
+  // ctx.params.table = the table on which the method was called
+  // ctx.params.rowId = the id of the row
+});
+
+dispose(); // remove hook
+
+store.hook('before', 'getTable', (ctx) => {
+  // ctx.method = 'getRow'
+  // ctx.params.table = the table on which the method was called
+});
+
+store.hook('before', 'getCell', (ctx) => {
+  // ctx.method = 'getRow'
+  // ctx.params.table = the table on which the method was called
+  // ctx.params.rowId = the id of the row
+  // ctx.params.cellKey = the key of the cell
+});
+
+store.hook('before', 'queryRows', (ctx) => {
+  // ctx.method = 'queryRows'
+  // ctx.params.table = the table on which the method was called
+  // ctx.params.query = the query object
 });
 ```

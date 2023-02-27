@@ -1,5 +1,6 @@
 {
   "compilerOptions": {
+    "baseUrl": ".",
     "strict": true,
     "target": "ESNext",
     "module": "ESNext",
@@ -10,6 +11,9 @@
     "isolatedModules": true,
     "resolveJsonModule": true,
     "strictNullChecks": true,
-    "useUnknownInCatchVariables": false
+    "useUnknownInCatchVariables": false,
+    "paths": {
+      "*": ["<app path>/node_modules/@types/*"]
+    }
   }
 }
