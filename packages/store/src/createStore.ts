@@ -6,15 +6,14 @@ import type {
   HooksContext,
   HookWhat,
   HookWhen,
-  SetDatabaseOptions,
   Store,
-  StoreOptions,
+  StoreInstance,
+  StorePlugin,
 } from './types';
 import type { QueryParams } from './utils/queryObservable';
-import type { ObservableListenerDispose, ObservableObject } from '@legendapp/state';
-import type { Database } from '@tabular-state/database/src/types/index';
+import type { ObservableObject } from '@legendapp/state';
 
-import { observable } from '@legendapp/state';
+import { batch as obsBatch, observable } from '@legendapp/state';
 
 import { observableQuery } from './utils/queryObservable';
 
@@ -22,12 +21,10 @@ export type AnyObject = object;
 
 export function createStore<
   Tables extends Record<string, DefaultTable> = Record<string, DefaultTable>,
->(options?: StoreOptions<Tables>): Store<Tables> {
+>(): Store<Tables> {
   type TableNames = keyof Tables & string;
 
-  let database: Database | undefined;
-  let persistentTables: string[] = [];
-  let dynamicPersistentTables: ((tableName: TableNames) => string | false) | undefined;
+  const pluginDisposer = new Set<() => void>();
   const tables = observable<Record<string, Record<DefaultTable['idField'], DefaultTable['item']>>>(
     {},
   );
@@ -274,76 +271,23 @@ export function createStore<
     });
   }
 
-  let dispose: ObservableListenerDispose | undefined;
-  function mountListener() {
-    // eslint-disable-next-line @typescript-eslint/naming-convention
-    dispose = tables.onChange((_v, _g, changes) => {
-      changes.forEach((change) => {
-        const [tableName, rowId] = change.path;
-        const persist =
-          persistentTables.includes(tableName as string) ||
-          dynamicPersistentTables?.(tableName as string);
-        if (persist && rowId && database) {
-          database.setItem(
-            tableName as string,
-            rowId,
-            $getRawRow(tableName as string, rowId).peek(),
-          );
-        }
-      });
-    });
+  function batch(fn: () => void) {
+    obsBatch(fn);
   }
 
-  function cleanupListener() {
-    dispose?.();
-  }
-
-  async function setDatabase(databaseOptions: SetDatabaseOptions<Tables>) {
-    const isUpdated = !!database;
-    database = databaseOptions.database;
-
-    const idFields = Object.fromEntries(databaseOptions.persistentTables);
-    persistentTables = databaseOptions.persistentTables?.map(([n]) => n) || undefined;
-    dynamicPersistentTables = databaseOptions.dynamicPersistentTables;
-
-    if (isUpdated || !database) {
-      cleanupListener();
-    }
-    if (isUpdated) {
-      Object.keys(tables.peek()).forEach((tableName) => {
-        delTable(tableName);
-      });
-    }
-    if (database && persistentTables) {
-      const allRows = await database.getAllItems();
-      Object.entries(allRows).forEach(([tableName, rows]) => {
-        const idField =
-          idFields[tableName] || databaseOptions.dynamicPersistentTables?.(tableName) || 'id';
-        rows.forEach((item) => {
-          setRow(tableName, item[idField] as string | number, item);
-        });
-        try {
-          options?.onRevalidate?.(
-            tableName,
-            rows.map((i) => i[idField] as string | number),
-          );
-        } catch (e) {
-          // ignore
-        }
-      });
-      mountListener();
-    }
-    databaseOptions.onReady?.();
+  function clear() {
+    tables.set({});
   }
 
   function cleanup() {
-    tables.set({});
+    clear();
     Object.keys(hooks).forEach((key) => {
       delete hooks[key];
     });
+    pluginDisposer.forEach((dispose) => dispose());
   }
 
-  return {
+  const instance: StoreInstance<Tables> = {
     hook,
     getTable,
     setTable,
@@ -357,7 +301,16 @@ export function createStore<
     setCell,
     getCell,
     delCell,
-    setDatabase,
     cleanup,
+    batch,
+    clear,
+  };
+
+  return {
+    ...instance,
+    plugin: (plugin: StorePlugin) => {
+      const unmount = plugin.mount(instance);
+      pluginDisposer.add(unmount);
+    },
   };
 }

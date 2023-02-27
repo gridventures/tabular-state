@@ -43,44 +43,6 @@ export type HooksContext<
   };
   error?: Error;
 };
-// & (
-//   | {
-//       method: 'getRow';
-//       params: {
-//         tableName: TableName;
-//         rowId: Tables[TableName]['idField'];
-//         cellName?: undefined;
-//         query?: undefined;
-//       };
-//     }
-//   | {
-//       method: 'getCell';
-//       params: {
-//         tableName: TableName;
-//         rowId: Tables[TableName]['idField'];
-//         cellName: keyof Tables[TableName]['item'];
-//         query?: undefined;
-//       };
-//     }
-//   | {
-//       method: 'getTable';
-//       params: {
-//         tableName: TableName;
-//         rowId?: undefined;
-//         cellName?: undefined;
-//         query?: undefined;
-//       };
-//     }
-//   | {
-//       method: 'queryRows';
-//       params: {
-//         tableName: TableName;
-//         rowId?: undefined;
-//         cellName?: undefined;
-//         query: QueryFn<Tables[TableName]['item']>;
-//       };
-//     }
-// );
 export type HookCallback<
   Tables extends Record<string, DefaultTable>,
   TableNames extends keyof Tables & string,
@@ -99,6 +61,7 @@ export type Store<Tables extends Record<string, DefaultTable>> = {
   delTable<TableName extends keyof Tables & string>(name: TableName): void;
   getTable<TableName extends keyof Tables & string>(
     name: TableName,
+    silent?: boolean,
   ): ObservableObject<{
     [k: string | number]: Tables[TableName]['item'];
   }>;
@@ -115,10 +78,12 @@ export type Store<Tables extends Record<string, DefaultTable>> = {
     tableName: TableName,
     rowId: Tables[TableName]['idField'],
     rowValue: Tables[TableName]['item'],
+    silent?: boolean,
   ): void;
   delRow<TableName extends keyof Tables & string>(
     tableName: TableName,
     rowId: Tables[TableName]['idField'],
+    silent?: boolean,
   ): void;
   hasRow<TableName extends keyof Tables & string>(
     tableName: TableName,
@@ -139,11 +104,13 @@ export type Store<Tables extends Record<string, DefaultTable>> = {
     rowId: Tables[TableName]['idField'],
     cellName: CellKey,
     cellValue: Tables[TableName]['item'][CellKey],
+    silent?: boolean,
   ): void;
   delCell<TableName extends keyof Tables & string, CellKey extends keyof Tables[TableName]['item']>(
     tableName: TableName,
     rowId: Tables[TableName]['idField'],
     cellName: CellKey,
+    silent?: boolean,
   ): void;
   queryRows<TableName extends keyof Tables & string>(
     tableName: TableName,
@@ -158,32 +125,18 @@ export type Store<Tables extends Record<string, DefaultTable>> = {
     QueryFn<Tables[TableName]['item']>,
     QueryMeta,
   ];
-  setDatabase(options: SetDatabaseOptions<Tables>): Promise<void>;
+  // setDatabase(options: SetDatabaseOptions<Tables>): Promise<void>;
+  plugin(plugin: StorePlugin): void; // eslint-disable-line no-use-before-define
+  batch(fn: () => void): void;
   cleanup(): void;
+  clear(): void;
 };
 
-export type StoreOptions<Tables extends Record<string, DefaultTable>> = {
-  onRevalidate?<TableName extends keyof Tables & string>(
-    tableName: TableName,
-    rowIds: Tables[TableName]['idField'][],
-  ): Promise<void> | void;
-  onQueryRows?: <TableName extends keyof Tables & string>(
-    tableName: TableName,
-    query: QueryParams<Tables[TableName]['item']>,
-    results: Tables[TableName]['item'][],
-  ) => Promise<void> | void;
-  onGetRow?: <TableName extends keyof Tables & string>(
-    tableName: TableName,
-    rowId: Tables[TableName]['idField'],
-    rowValue: Tables[TableName]['item'] | undefined,
-  ) => Promise<void> | void;
-  onGetCell?: <
-    TableName extends keyof Tables & string,
-    CellKey extends keyof Tables[TableName]['item'],
-  >(
-    tableName: TableName,
-    rowId: Tables[TableName]['idField'],
-    cellName: CellKey,
-    cellValue: Tables[TableName]['item'][CellKey] | undefined,
-  ) => Promise<void> | void;
-};
+export type StoreInstance<T extends Record<string, DefaultTable> = Record<string, DefaultTable>> =
+  Omit<Store<T>, 'plugin'>;
+
+export interface StorePlugin {
+  mount<T extends Record<string, DefaultTable> = Record<string, DefaultTable>>(
+    store: StoreInstance<T>,
+  ): () => void;
+}

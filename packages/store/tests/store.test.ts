@@ -3,6 +3,7 @@ import type { HookWhat } from '../src';
 
 import { describe, it, expect, beforeEach, afterEach, afterAll } from 'vitest';
 
+import { createMemoryDbAdapter } from '../../database/src/memorydb'; // eslint-disable-line import/no-relative-packages
 import { createStore } from '../src';
 
 type Tables = {
@@ -290,6 +291,67 @@ describe('createStore', () => {
     expect(paginated.peek().length).toBe(2);
     expect(meta.canShowMore.peek()).toBe(false);
     expect(meta.totalRowsAvailable.peek()).toBe(2);
+  });
+
+  it('should implement database plugin', async () => {
+    const db = createMemoryDbAdapter({
+      autoPersistTables: [['users', 'id']],
+    });
+    store.plugin(db);
+
+    store.setRow('users', 1, {
+      id: 1,
+      name: 'John',
+      age: 20,
+    });
+
+    let dbItem = await db.getItem('users', 1);
+    expect(dbItem?.id).toBe(1);
+
+    store.setCell('users', 1, 'name', 'Jane');
+    dbItem = await db.getItem('users', 1);
+    expect(dbItem?.name).toBe('Jane');
+
+    store.delCell('users', 1, 'name');
+    dbItem = await db.getItem('users', 1);
+    expect(dbItem?.name).toBeUndefined();
+
+    store.delRow('users', 1);
+    dbItem = await db.getItem('users', 1);
+    expect(dbItem).toBeUndefined();
+  });
+
+  it('cleans plugins from store', async () => {
+    const db = createMemoryDbAdapter({
+      autoPersistTables: [['users', 'id']],
+    });
+    store.plugin(db);
+    store.setRow('users', 1, {
+      id: 1,
+      name: 'John',
+      age: 20,
+    });
+    let dbItem = await db.getItem('users', 1);
+    expect(dbItem?.id).toBe(1);
+    // db plugin is removed here
+    store.cleanup();
+    // next change should not be persisted
+    store.setCell('users', 1, 'name', 'Jane');
+    dbItem = await db.getItem('users', 1);
+    expect(dbItem?.name).toBe('John');
+  });
+
+  it('clears store', () => {
+    store.setRow('users', 1, {
+      id: 1,
+      name: 'John',
+      age: 20,
+    });
+    let row = store.getRow('users', 1).peek();
+    expect(row?.id).toBe(1);
+    store.clear();
+    row = store.getRow('users', 1).peek();
+    expect(row).toBeUndefined();
   });
 
   afterEach(() => {
