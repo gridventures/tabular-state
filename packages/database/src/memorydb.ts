@@ -1,6 +1,8 @@
 /* eslint-disable class-methods-use-this */
 import type { DatabaseId, Database, DatabaseItem, DatabaseOptions } from './types';
-import type { StoreInstance } from '@tabular-state/store';
+import type { StoreInstance, PluginStore } from '@tabular-state/store';
+
+import { mountDatabasePlugin } from './databasePlugin';
 
 export class MemoryDbAdapter implements Database {
   namespace = 'default';
@@ -161,69 +163,14 @@ export class MemoryDbAdapter implements Database {
     });
   }
 
-  public mount(store: StoreInstance<any>) {
-    const runHook = (
-      ctx: { params: { table: string; rowId?: DatabaseId | undefined } },
-      cb: (table: string, rowId: DatabaseId) => Promise<void>,
-    ) => {
-      return new Promise<void>((res, rej) => {
-        const { table, rowId } = ctx.params;
-        if (
-          rowId === undefined ||
-          (this.autoPersistTables?.some(([t]) => t === table) === false &&
-            this.checkAutoPersistTables?.(table) === undefined)
-        ) {
-          res();
-          return;
-        }
-        cb(table, rowId)
-          .then(() => {
-            res();
-          })
-          .catch((e) => {
-            rej(e);
-          });
-      });
-    };
-
-    const afterSetRowHook = store.hook('after', 'setRow', (ctx) => {
-      return runHook(ctx, async (table, rowId) => {
-        const row = store.getRow(table, rowId).peek();
-        if (!row) return;
-        await this.setItem(table, rowId, row);
-      });
-    });
-
-    const afterDelRowHook = store.hook('after', 'delRow', (ctx) => {
-      return runHook(ctx, (table, rowId) => this.delItem(table, rowId));
-    });
-
-    const afterSetCellHook = store.hook('after', 'setCell', (ctx) => {
-      return runHook(ctx, async (table, rowId) => {
-        const row = store.getRow(table, rowId).peek();
-        if (!row) return;
-        await this.setItem(table, rowId, row);
-      });
-    });
-
-    const afterDelCellHook = store.hook('after', 'delCell', (ctx) => {
-      return runHook(ctx, async (table, rowId) => {
-        const row = store.getRow(table, rowId).peek();
-        if (!row) return;
-        await this.setItem(table, rowId, row);
-      });
-    });
-
+  public mount(store: PluginStore<any>) {
     this.storeInstance = store;
-
     this.revalidate();
 
-    return () => {
-      afterSetRowHook();
-      afterSetCellHook();
-      afterDelRowHook();
-      afterDelCellHook();
-    };
+    return mountDatabasePlugin(store, this, {
+      autoPersistTables: this.autoPersistTables,
+      checkAutoPersistTables: this.checkAutoPersistTables,
+    });
   }
 }
 

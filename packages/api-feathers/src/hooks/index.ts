@@ -46,7 +46,7 @@ const setItems = storeHook((o, c) => {
   results.forEach((row) => {
     const id = row[idField];
     if (!id) return;
-    store.setRow(tableName, id, row);
+    store.setRow(tableName, id, row, true);
   });
 
   return c;
