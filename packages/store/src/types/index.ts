@@ -19,6 +19,7 @@ export type HookWhat =
   | 'getCell'
   | 'setRow'
   | 'setCell'
+  | 'delTable'
   | 'delRow'
   | 'delCell'
   | 'queryRows';
@@ -127,8 +128,13 @@ export type Store<Tables extends Record<string, DefaultTable>> = {
 export type StoreInstance<T extends Record<string, DefaultTable> = Record<string, DefaultTable>> =
   Omit<Store<T>, 'plugin'>;
 
+export type PluginStore<T extends Record<string, DefaultTable> = Record<string, DefaultTable>> =
+  StoreInstance<T> & {
+    tables: ObservableObject<Record<string, Record<DefaultTable['idField'], DefaultTable['item']>>>;
+  };
+
 export interface StorePlugin {
   mount<T extends Record<string, DefaultTable> = Record<string, DefaultTable>>(
-    store: StoreInstance<T>,
+    store: PluginStore<T>,
   ): () => void;
 }

@@ -95,7 +95,16 @@ export function createStore<
   }
 
   function delTable<TableName extends TableNames>(name: TableName) {
-    tables[name].delete();
+    return runWithHooks(
+      true,
+      'delTable',
+      () => {
+        tables[name].delete();
+      },
+      {
+        table: name,
+      },
+    );
   }
 
   function $getOrSetTable<TableName extends TableNames>(name: TableName) {
@@ -309,7 +318,10 @@ export function createStore<
   return {
     ...instance,
     plugin: (plugin: StorePlugin) => {
-      const unmount = plugin.mount(instance);
+      const unmount = plugin.mount({
+        ...instance,
+        tables,
+      });
       pluginDisposer.add(unmount);
     },
   };
