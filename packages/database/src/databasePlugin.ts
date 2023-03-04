@@ -28,7 +28,7 @@ export function mountDatabasePlugin(
       }
       if (cell) {
         // cell was changed
-        const rowValue = store.getRow(tableName, rowId).peek();
+        const rowValue = store.getRow(tableName, rowId, true).peek();
         database.setItem(tableName, rowId, rowValue);
         return;
       }
@@ -39,7 +39,7 @@ export function mountDatabasePlugin(
       }
       if (valueAtPath !== undefined) {
         // row was added or changed
-        const rowValue = store.getRow(tableName, rowId).peek();
+        const rowValue = store.getRow(tableName, rowId, true).peek();
         database.setItem(tableName, rowId, rowValue);
       }
     });
