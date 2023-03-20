@@ -1,5 +1,5 @@
 import type { Sort } from './sort';
-import type { ObservableArray, ObservableComputed, ObservableObject } from '@legendapp/state';
+import type { ObservableComputed, ObservableObject, ObservableReadable } from '@legendapp/state';
 import type { BasicValueQuery } from 'sift';
 
 import { batch, computed, observable, observe, lockObservable } from '@legendapp/state';
@@ -49,10 +49,6 @@ export type Meta = {
 
 export type QueryMeta = ObservableComputed<Meta>;
 
-// type ObservableQueryResult<T> = ObservableComputed<T> & QueryFn<T>;
-
-export type ObservableQueryResult<T> = ObservableArray<T[]>;
-
 export function observableQuery<
   TItem extends Record<string, any>,
   T extends Record<string | number, TItem>,
@@ -64,7 +60,7 @@ export function observableQuery<
     onPrev?: (prevPage: number) => void;
     onParamsChange?: (query: QueryParams<TItem>) => void;
   },
-): [ObservableQueryResult<TItem>, QueryFn<TItem>, QueryMeta] {
+): [ObservableReadable<TItem[]>, QueryFn<TItem>, QueryMeta] {
   const query = observable(params.query || {}) as ObservableObject<
     Query<TItem> | CombineQuery<TItem>
   >;

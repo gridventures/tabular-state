@@ -1,10 +1,5 @@
-import type {
-  ObservableQueryResult,
-  QueryFn,
-  QueryMeta,
-  QueryParams,
-} from '../utils/queryObservable';
-import type { ObservableObject } from '@legendapp/state';
+import type { QueryFn, QueryMeta, QueryParams } from '../utils/queryObservable';
+import type { ObservableObject, ObservableReadable } from '@legendapp/state';
 
 export type DefaultTable = {
   idField: string | number;
@@ -114,7 +109,7 @@ export type Store<Tables extends Record<string, DefaultTable>> = {
      */
     silent?: boolean,
   ): readonly [
-    ObservableQueryResult<Tables[TableName]['item']>,
+    ObservableReadable<Tables[TableName]['item'][]>,
     QueryFn<Tables[TableName]['item']>,
     QueryMeta,
   ];
