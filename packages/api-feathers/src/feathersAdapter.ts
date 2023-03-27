@@ -55,6 +55,7 @@ export function createFeathersClientAdapter<S extends Store<any>>(
         // remove: [hooks.optimisticDelItems(options)],
       },
       after: {
+        create: [hooks.setItems(options)],
         find: [hooks.setItems(options)],
         get: [hooks.setItems(options)],
         patch: [hooks.setItems(options)],
